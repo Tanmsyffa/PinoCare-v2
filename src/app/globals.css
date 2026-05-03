@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Colors - Reference Design */
+  --color-bg-primary: #FFF9F0;
+  --color-brand-pink: #FFD1D1;
+  --color-brand-pink-dark: #F4A7A7;
+  --color-text-main: #635858;
+  --color-text-muted: var(--color-text-main);
+  --color-card-bg: rgba(255, 249, 240, 0.8);
+
+  /* Fonts */
+  --font-heading: var(--font-jakarta);
+  --font-body: var(--font-jakarta);
+
+  /* Radius */
+  --radius-card: 32px;
+  --radius-button: 24px;
+
+  /* Shadows */
+  --shadow-pink: 0 10px 40px -10px rgba(244, 167, 167, 0.2);
+  --shadow-pink-lg: 0 20px 60px -15px rgba(244, 167, 167, 0.3);
+}
+
+/* Base styles */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-main);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), system-ui, sans-serif;
+}
+
+/* Card glassmorphism */
+.glass-card {
+  background: var(--color-card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-pink);
+}
+
+/* Hide scrollbar for horizontal scroll */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area for bottom nav */
+.safe-bottom {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0e6e6 25%,
+    #f8eded 50%,
+    #f0e6e6 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+/* Breathing animation pulse */
+@keyframes breathe-glow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(244, 167, 167, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(244, 167, 167, 0.4);
+  }
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}

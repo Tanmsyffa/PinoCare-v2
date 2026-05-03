@@ -1,0 +1,48 @@
+{
+  "name": "PinoCare - Ruang Sayang",
+  "short_name": "PinoCare",
+  "description": "Aplikasi penuh cinta dari Abang untuk Dede 💕",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#FFF9F9",
+  "theme_color": "#FF88A7",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["lifestyle", "health"],
+  "icons": [
+    {
+      "src": "/images/pino-main.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/pino-main.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/pino-main.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/pino-main.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/pino-main.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "PinoCare Home"
+    }
+  ]
+}
