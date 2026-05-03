@@ -15,11 +15,21 @@ export default function PWAInstaller() {
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Register service worker
     if ("serviceWorker" in navigator) {
+      if (process.env.NODE_ENV === "development") {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => registration.unregister());
+        });
+        caches.keys().then((keys) => {
+          keys.forEach((key) => caches.delete(key));
+        });
+        return;
+      }
+
+      // Register service worker
       navigator.serviceWorker
         .register("/sw.js")
-        .then(() => console.log("SW registered"))
+        .then((registration) => registration.update())
         .catch(() => console.log("SW registration failed"));
     }
 

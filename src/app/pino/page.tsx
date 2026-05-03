@@ -1,4 +1,4 @@
-import GalleryContent from "./GalleryContent";
+import GalleryContent from "@/features/gallery/components/gallery-content";
 
 export const dynamic = "force-dynamic";
 

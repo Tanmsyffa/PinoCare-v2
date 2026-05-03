@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Wind } from "lucide-react";
-import { CALMING_TIPS } from "@/lib/constants";
+import { CALMING_TIPS } from "@/config/app-content";
 import { useState, useEffect } from "react";
 
 export default function BreathePage() {

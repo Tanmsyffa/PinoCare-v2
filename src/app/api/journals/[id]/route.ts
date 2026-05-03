@@ -1,21 +1,26 @@
-import { NextResponse } from "next/server";
-import { getServerSupabase } from "@/lib/supabase-server";
+import { journalIdSchema, journalInputSchema } from "@/features/journal/journal-validation";
+import { STORAGE_BUCKETS } from "@/config/storage";
+import { requirePinSession } from "@/lib/auth/require-pin-session";
+import { noStoreJson } from "@/lib/http/no-store-response";
+import {
+  createPrivateSignedUrl,
+  normalizeStoragePath,
+} from "@/lib/supabase/media-storage";
+import { getServerSupabase } from "@/lib/supabase/server";
 
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
+type JournalRow = {
+  photo_url: string | null;
+  [key: string]: unknown;
+};
 
-// Helper untuk mengekstrak nama file dari public URL
-function getFileNameFromUrl(url: string | null) {
-  if (!url) return null;
-  try {
-    const urlObj = new URL(url);
-    const pathnameParts = urlObj.pathname.split("/");
-    return pathnameParts[pathnameParts.length - 1];
-  } catch {
-    return url.split("/").pop() || null;
-  }
+async function attachSignedPhotoUrl(journal: JournalRow) {
+  const photoPath = normalizeStoragePath(journal.photo_url, STORAGE_BUCKETS.journals);
+
+  return {
+    ...journal,
+    photo_path: photoPath,
+    photo_url: await createPrivateSignedUrl(STORAGE_BUCKETS.journals, photoPath),
+  };
 }
 
 export async function GET(
@@ -24,27 +29,31 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json({ error: "Journal ID is required" }, { status: 400 });
+    const authResponse = await requirePinSession(_request);
+    if (authResponse) return authResponse;
+
+    const parsedId = journalIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return noStoreJson({ error: "Journal ID is invalid" }, { status: 400 });
     }
 
     const supabase = getServerSupabase();
     const { data: journal, error } = await supabase
       .from("journals")
       .select("*")
-      .eq("id", id)
+      .eq("id", parsedId.data)
       .single();
 
     if (error) {
       console.error("Supabase GET detail error:", error);
-      return NextResponse.json({ error: "Journal not found" }, { status: 404 });
+      return noStoreJson({ error: "Journal not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ journal }, { status: 200 });
+    return noStoreJson({ journal: await attachSignedPhotoUrl(journal as JournalRow) }, { status: 200 });
   } catch (err: unknown) {
     console.error("Unexpected error:", err);
-    return NextResponse.json(
-      { error: getErrorMessage(err, "Failed to fetch journal") },
+    return noStoreJson(
+      { error: "Failed to fetch journal" },
       { status: 500 }
     );
   }
@@ -56,12 +65,22 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json({ error: "Journal ID is required" }, { status: 400 });
+    const authResponse = await requirePinSession(request);
+    if (authResponse) return authResponse;
+
+    const parsedId = journalIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return noStoreJson({ error: "Journal ID is invalid" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { title, content, mood, date, photo_url } = body;
+    const body = await request.json().catch(() => null);
+    const parsedJournal = journalInputSchema.safeParse(body);
+
+    if (!parsedJournal.success) {
+      return noStoreJson({ error: "Data jurnal tidak valid" }, { status: 400 });
+    }
+
+    const { title, content, mood, date, photo_path } = parsedJournal.data;
 
     const supabase = getServerSupabase();
 
@@ -69,19 +88,18 @@ export async function PUT(
     const { data: oldJournal, error: fetchError } = await supabase
       .from("journals")
       .select("photo_url")
-      .eq("id", id)
+      .eq("id", parsedId.data)
       .single();
 
     if (fetchError) {
-      return NextResponse.json({ error: "Journal not found" }, { status: 404 });
+      return noStoreJson({ error: "Journal not found" }, { status: 404 });
     }
 
-    // Jika photo_url berubah dan ada foto lama, hapus foto lama dari storage
-    if (oldJournal.photo_url && oldJournal.photo_url !== photo_url) {
-      const oldFileName = getFileNameFromUrl(oldJournal.photo_url);
-      if (oldFileName) {
-        await supabase.storage.from("journals").remove([oldFileName]);
-      }
+    const oldPhotoPath = normalizeStoragePath(oldJournal.photo_url, STORAGE_BUCKETS.journals);
+
+    // Jika foto berubah atau dihapus, hapus file lama dari storage
+    if (oldPhotoPath && oldPhotoPath !== photo_path) {
+      await supabase.storage.from(STORAGE_BUCKETS.journals).remove([oldPhotoPath]);
     }
 
     const updatedJournal = {
@@ -89,26 +107,26 @@ export async function PUT(
       content,
       mood,
       date,
-      photo_url: photo_url || null,
+      photo_url: photo_path || null,
     };
 
     const { data: journal, error } = await supabase
       .from("journals")
       .update(updatedJournal)
-      .eq("id", id)
+      .eq("id", parsedId.data)
       .select()
       .single();
 
     if (error) {
       console.error("Supabase PUT error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return noStoreJson({ error: "Failed to update journal" }, { status: 500 });
     }
 
-    return NextResponse.json({ journal }, { status: 200 });
+    return noStoreJson({ journal: await attachSignedPhotoUrl(journal as JournalRow) }, { status: 200 });
   } catch (err: unknown) {
     console.error("Unexpected error:", err);
-    return NextResponse.json(
-      { error: getErrorMessage(err, "Failed to update journal") },
+    return noStoreJson(
+      { error: "Failed to update journal" },
       { status: 500 }
     );
   }
@@ -120,8 +138,12 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json({ error: "Journal ID is required" }, { status: 400 });
+    const authResponse = await requirePinSession(request);
+    if (authResponse) return authResponse;
+
+    const parsedId = journalIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return noStoreJson({ error: "Journal ID is invalid" }, { status: 400 });
     }
 
     const supabase = getServerSupabase();
@@ -130,24 +152,22 @@ export async function DELETE(
     const { data: journal, error: fetchError } = await supabase
       .from("journals")
       .select("photo_url")
-      .eq("id", id)
+      .eq("id", parsedId.data)
       .single();
 
     if (fetchError) {
-      return NextResponse.json({ error: "Journal not found" }, { status: 404 });
+      return noStoreJson({ error: "Journal not found" }, { status: 404 });
     }
 
     // Hapus file foto dari Supabase Storage jika ada
-    if (journal.photo_url) {
-      const fileName = getFileNameFromUrl(journal.photo_url);
-      if (fileName) {
-        const { error: storageError } = await supabase.storage
-          .from("journals")
-          .remove([fileName]);
-        if (storageError) {
-          console.error("Failed to delete photo from storage:", storageError);
-          // Lanjutkan proses penghapusan data di tabel meskipun gagal hapus foto
-        }
+    const photoPath = normalizeStoragePath(journal.photo_url, STORAGE_BUCKETS.journals);
+    if (photoPath) {
+      const { error: storageError } = await supabase.storage
+        .from(STORAGE_BUCKETS.journals)
+        .remove([photoPath]);
+      if (storageError) {
+        console.error("Failed to delete photo from storage:", storageError);
+        // Lanjutkan proses penghapusan data di tabel meskipun gagal hapus foto
       }
     }
 
@@ -155,18 +175,18 @@ export async function DELETE(
     const { error } = await supabase
       .from("journals")
       .delete()
-      .eq("id", id);
+      .eq("id", parsedId.data);
 
     if (error) {
       console.error("Supabase DELETE error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return noStoreJson({ error: "Failed to delete journal" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return noStoreJson({ success: true }, { status: 200 });
   } catch (err: unknown) {
     console.error("Unexpected error:", err);
-    return NextResponse.json(
-      { error: getErrorMessage(err, "Failed to delete journal") },
+    return noStoreJson(
+      { error: "Failed to delete journal" },
       { status: 500 }
     );
   }

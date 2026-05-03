@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
-import { MOOD_BOOSTERS } from "@/lib/constants";
+import { MOOD_BOOSTERS } from "@/config/app-content";
 import { useState } from "react";
 
 const SLIDE_EMOJIS = ["🌸", "🌈", "🐻", "✨"];

@@ -1,11 +1,8 @@
-const CACHE_NAME = "pinocare-v2";
+const CACHE_NAME = "pinocare-v4";
 
 // Files to cache for offline use
 const PRECACHE_URLS = [
-  "/",
-  "/pino",
-  "/journal",
-  "/me",
+  "/unlock",
   "/images/pino-main.png",
   "/images/pino-sad.png",
   "/images/pino-sleeping.png",
@@ -41,6 +38,18 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function isProtectedStaticAsset(url) {
+  if (url.pathname.startsWith("/images/fotoDede/")) return true;
+  if (url.pathname.startsWith("/uploads/")) return true;
+
+  if (url.pathname === "/_next/image") {
+    const imageUrl = url.searchParams.get("url") || "";
+    return imageUrl.startsWith("/images/fotoDede/") || imageUrl.startsWith("/uploads/");
+  }
+
+  return false;
+}
+
 // Fetch: network-first for API, cache-first for assets
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -49,44 +58,38 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
   if (request.method !== "GET") return;
 
-  // Network-first for API routes and navigation
+  // Never cache Next.js generated assets. Stale chunks can cause hydration errors.
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (isProtectedStaticAsset(url)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Network-first for API routes and navigation, without caching private pages
   if (url.pathname.startsWith("/api/") || request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          // Cache successful navigation responses
-          if (request.mode === "navigate" && response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
         .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          if (request.mode === "navigate") return caches.match("/");
+          if (request.mode === "navigate") return caches.match("/unlock");
           return Response.error();
         })
     );
     return;
   }
 
-  // Cache-first for static assets
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((response) => {
-          if (response.ok && url.origin === self.location.origin) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          return cached || Response.error();
-        });
-    })
-  );
+  if (url.origin === self.location.origin && PRECACHE_URLS.includes(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request);
+      })
+    );
+    return;
+  }
+
+  event.respondWith(fetch(request));
 });

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isValidPinSessionToken, PIN_COOKIE_NAME } from "@/lib/pin-auth";
+import { isValidPinSessionToken, PIN_COOKIE_NAME } from "@/lib/auth/pin-session";
 
 const PUBLIC_FILE = /\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|json|js|css|txt|xml|woff2?)$/i;
 

@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
-import BottomNav from "@/components/layout/BottomNav";
-import PWAInstaller from "@/components/layout/PWAInstaller";
+import BottomNav from "@/components/layout/bottom-nav";
+import PWAInstaller from "@/components/layout/pwa-installer";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({

@@ -1,4 +1,4 @@
-import UnlockForm from "./UnlockForm";
+import UnlockForm from "@/features/auth/components/unlock-form";
 
 export const dynamic = "force-dynamic";
 

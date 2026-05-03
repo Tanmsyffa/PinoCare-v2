@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { PIN_COOKIE_NAME } from "@/lib/pin-auth";
+import { PIN_COOKIE_NAME } from "@/lib/auth/pin-session";
+import { NO_STORE_VALUE } from "@/lib/http/no-store-response";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   const response = NextResponse.json({ ok: true });
+  response.headers.set("Cache-Control", NO_STORE_VALUE);
 
   response.cookies.set(PIN_COOKIE_NAME, "", {
     httpOnly: true,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePinSession } from "@/lib/auth/require-pin-session";
 
 export const dynamic = "force-dynamic";
 
@@ -6,7 +7,10 @@ function getWhatsAppNumber() {
   return (process.env.WHATSAPP_NUMBER || "").replace(/\D/g, "");
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const authResponse = await requirePinSession(request);
+  if (authResponse) return authResponse;
+
   const phoneNumber = getWhatsAppNumber();
 
   if (!phoneNumber) {
