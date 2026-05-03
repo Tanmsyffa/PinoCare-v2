@@ -3,25 +3,21 @@ export const MOOD_TYPES = {
     label: "Lagi Capek",
     emoji: "😴",
     color: "#B8A9C9",
-    description: "Istirahat dulu ya sayang...",
   },
   kangen: {
     label: "Kangen Abang",
     emoji: "💕",
     color: "var(--color-brand-pink)",
-    description: "Abang selalu ada buat Dede",
   },
   sedih: {
     label: "Sedih / Bad Mood",
     emoji: "😢",
     color: "#89CFF0",
-    description: "Pino peluk Dede ya...",
   },
   stres: {
     label: "Pusing / Stres",
     emoji: "😵‍💫",
     color: "#C3B1E1",
-    description: "Tarik napas dulu, Dede...",
   },
 } as const;
 
@@ -57,22 +53,18 @@ export const MOOD_BOOSTERS = [
   {
     id: 1,
     quote: "dede itu kuat, cantik, dan lucuww 💪",
-    color: "from-pink-200 to-rose-300",
   },
   {
     id: 2,
     quote: "besok pasti lebih baik dari hari ini 🌈",
-    color: "from-blue-200 to-purple-300",
   },
   {
     id: 3,
     quote: "peluk Pino yang hangat buat dede! 🐻",
-    color: "from-amber-200 to-orange-300",
   },
   {
     id: 4,
     quote: "dede punya abang yang selalu support! 💕",
-    color: "from-rose-200 to-pink-300",
   },
 ];
 
